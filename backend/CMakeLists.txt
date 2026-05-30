@@ -12,6 +12,10 @@ set(SOURCES
     src/LivenessAnalyzer.cpp
     src/InterferenceGraph.cpp
     src/RegisterAllocator.cpp
+    src/CFGGenerator.cpp
+    src/EventEngine.cpp
+    src/LinearScanAllocator.cpp
+    src/OptimisticColoringAllocator.cpp
     src/main.cpp
 )
 

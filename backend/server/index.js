@@ -86,10 +86,50 @@ app.post("/analyze", (req, res) => {
     const K = Math.max(1, Math.min(8, parseInt(registers, 10) || 4));
 
     console.log(`Analyzing IR (${ir.length} chars, K=${K})...`);
-    const result = runAnalysis(ir, K);
-    console.log(`  → ${result.instructions.length} instr, ${result.interferenceGraph.variables.length} vars, spill: ${result.allocation.spillRequired}`);
 
-    res.json(result);
+    // Check if C++ backend exists
+    const fs = require('fs');
+    const path = require('path');
+    const { execFile } = require('child_process');
+    
+    // Look for the executable in the parent directory (backend root) or build directory
+    const cppExePath = path.join(__dirname, '..', 'build', process.platform === 'win32' ? 'rasim.exe' : 'rasim');
+    const cppExePathFallback = path.join(__dirname, '..', process.platform === 'win32' ? 'rasim.exe' : 'rasim');
+    
+    const targetExe = fs.existsSync(cppExePath) ? cppExePath : (fs.existsSync(cppExePathFallback) ? cppExePathFallback : null);
+
+    if (targetExe) {
+      console.log(`  → Using C++ Backend: ${targetExe}`);
+      const child = execFile(targetExe, ['--headless', '-k', K.toString()], { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+        if (error) {
+          console.error("C++ backend error:", error);
+          console.error("Stderr:", stderr);
+          return res.status(500).json({ error: "C++ backend failed", details: error.message, stderr });
+        }
+        
+        try {
+          // Find where the JSON starts
+          const jsonStart = stdout.indexOf('{');
+          if (jsonStart === -1) throw new Error("No JSON object found in output");
+          
+          const jsonStr = stdout.substring(jsonStart);
+          const result = JSON.parse(jsonStr);
+          console.log(`  → C++ success: ${result.instructions?.length || 0} instr`);
+          res.json(result);
+        } catch (parseErr) {
+          console.error("Failed to parse C++ output:", parseErr);
+          res.status(500).json({ error: "Invalid JSON from C++ backend", stdout: stdout.substring(0, 500) });
+        }
+      });
+      
+      // Write IR to stdin
+      child.stdin.write(ir);
+      child.stdin.end();
+    } else {
+      console.log(`  → Using JS Backend fallback`);
+      const result = runAnalysis(ir, K);
+      res.json(result);
+    }
   } catch (err) {
     console.error("Analysis error:", err);
     res.status(500).json({
