@@ -202,7 +202,7 @@ entry:
     json += "  \"instructions\": [";
     for (size_t i = 0; i < instructions.size(); ++i) {
         json += "{\"id\":" + std::to_string(instructions[i].index)
-              + ",\"text\":\"" + escapeJSONString(instructions[i].text) + "\"}";
+              + ",\"text\":\"" + escapeJSONString(instructions[i].toString()) + "\"}";
         if (i < instructions.size() - 1) json += ",";
     }
     json += "],\n";

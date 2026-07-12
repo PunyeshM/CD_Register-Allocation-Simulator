@@ -128,7 +128,7 @@ std::string CFGGenerator::toJSON() const {
                 ",\"isExit\":" + (b.isExit ? "true" : "false") + ",\"isLoopHeader\":" + (b.isLoopHeader ? "true" : "false") + 
                 ",\"instructions\":[";
         for (size_t j = 0; j < b.instructions.size(); ++j) {
-            json += "{\"id\":" + std::to_string(b.instructions[j].index) + ",\"text\":\"" + escapeJSON(b.instructions[j].text) + "\"}";
+            json += "{\"id\":" + std::to_string(b.instructions[j].index) + ",\"text\":\"" + escapeJSON(b.instructions[j].toString()) + "\"}";
             if (j < b.instructions.size() - 1) json += ",";
         }
         json += "]}";

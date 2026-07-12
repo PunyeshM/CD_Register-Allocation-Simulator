@@ -1,5 +1,6 @@
 #include "BasicBlock.h"
 #include <sstream>
+#include <algorithm>
 
 BasicBlock::BasicBlock(const std::string& n) : name(n) {}
 

@@ -461,7 +461,7 @@ docker compose up --build  # Starts both services
 cd backend
 mkdir build && cd build
 cmake .. && cmake --build . --config Release
-./rasim ../examples/simple.ll 4
+./rasim ../../testcases/simple.ll -k 4
 ```
 
 ---
@@ -518,7 +518,8 @@ register-allocation-simulator/
 │       │   ├── AllocatorEngine.ts  # In-browser engine
 │       │   └── utils.ts
 │       └── types/index.ts
-├── examples/                       # Sample LLVM IR files
+├── examples/                       # Sample LLVM IR files for frontend
+├── testcases/                      # Benchmark and test LLVM IR files
 ├── docs/
 ├── docker-compose.yml
 ├── Makefile

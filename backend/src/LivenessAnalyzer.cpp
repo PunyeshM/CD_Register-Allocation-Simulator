@@ -185,7 +185,7 @@ std::string LivenessAnalyzer::toDOT() const {
         const auto& ls = liveSets[i];
         std::string label = inst.toString();
         
-        auto setToString = [](const std::set<std::string>& s) {
+        auto setToString = [](const std::set<std::string>& s) -> std::string {
             if (s.empty()) return "∅";
             std::string r;
             for (const auto& v : s) r += v + " ";

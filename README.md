@@ -126,6 +126,13 @@ register-allocation-simulator/
 │   ├── spill_required.ll
 │   ├── benchmark.ll
 │   └── high_pressure.ll
+├── testcases/
+│   ├── minimal.ll
+│   ├── simple.ll
+│   ├── spill_required.ll
+│   ├── benchmark.ll
+│   ├── high_pressure.ll
+│   └── complex_spill.ll
 ├── docs/
 ├── screenshots/
 ├── docker-compose.yml
@@ -155,7 +162,7 @@ mkdir -p build && cd build
 cmake ..
 cmake --build . --config Release
 ./rasim                    # Run with default IR
-./rasim ../examples/simple.ll 4  # Run with example
+./rasim ../../testcases/simple.ll -k 4  # Run with example
 ./run_tests                # Run tests
 ```
 
@@ -217,10 +224,12 @@ If the graph cannot be colored with K colors:
 
 | Example | Registers | Expected Result |
 |---------|-----------|-----------------|
+| `minimal.ll` | 1 | No spills |
 | `simple.ll` | 4 | No spills |
 | `spill_required.ll` | 2 | Spill required |
 | `benchmark.ll` | 3 | May spill |
 | `high_pressure.ll` | 4 | May spill |
+| `complex_spill.ll` | 3 | Spill required |
 
 ---
 

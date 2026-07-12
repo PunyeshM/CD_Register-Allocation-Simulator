@@ -17,17 +17,17 @@ void OptimisticColoringAllocator::allocate() {
     
     // Create local adjacency list
     std::map<std::string, std::set<std::string>> adj;
-    const auto& vars = graph.getVariables();
+    const auto& vars = graph.variables;
     for (const auto& v : vars) {
         remaining.insert(v);
         adj[v] = std::set<std::string>();
     }
     
     // Reconstruct edges
-    const auto& edges = graph.getEdges();
+    const auto& edges = graph.edges;
     for (const auto& e : edges) {
-        adj[e.source].insert(e.target);
-        adj[e.target].insert(e.source);
+        adj[e.u].insert(e.v);
+        adj[e.v].insert(e.u);
     }
     
     while (!remaining.empty()) {
@@ -67,8 +67,8 @@ void OptimisticColoringAllocator::allocate() {
         adj[v] = std::set<std::string>();
     }
     for (const auto& e : edges) {
-        adj[e.source].insert(e.target);
-        adj[e.target].insert(e.source);
+        adj[e.u].insert(e.v);
+        adj[e.v].insert(e.u);
     }
     
     // Assign colors
