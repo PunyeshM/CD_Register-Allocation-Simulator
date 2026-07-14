@@ -126,34 +126,29 @@ export class TutorAgent {
     this.context = ctx
   }
 
-  answer(question: string): TutorQA {
-    const q = question.toLowerCase().trim()
-
-    // Find best matching rule
-    let bestRule: QARule | null = null
-    let bestScore = 0
-
-    for (const rule of QA_RULES) {
-      let score = 0
-      for (const kw of rule.keywords) {
-        if (q.includes(kw)) score += kw.length
+  async answer(question: string): Promise<TutorQA> {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, context: this.context })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-      if (score > bestScore) { bestScore = score; bestRule = rule }
-    }
-
-    if (bestRule && bestScore > 0) {
-      const answerText = bestRule.answer(this.context)
-      const detailText = bestRule.detail?.(this.context)
+      
+      const data = await response.json();
       return {
         question,
-        answer: answerText + (detailText ? `\n\n**Details:** ${detailText}` : ""),
-        agent: bestRule.agent,
-        relatedConcepts: bestRule.concepts,
-      }
+        answer: data.answer,
+        agent: "tutor",
+        relatedConcepts: data.relatedConcepts || [],
+      };
+    } catch (error) {
+      console.error("Error fetching AI response:", error);
+      return this.genericAnswer(question);
     }
-
-    // Fallback: contextual generic answer
-    return this.genericAnswer(question)
   }
 
   getSuggestions(): string[] {

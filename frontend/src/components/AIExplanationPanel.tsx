@@ -12,6 +12,7 @@ import {
   Brain, Activity, Palette, AlertTriangle, Network, MessageSquare,
   Send, ChevronRight, Lightbulb, Info, Sparkles
 } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 const AGENT_TABS: { id: AgentType; label: string; icon: React.ElementType; color: string }[] = [
   { id: "liveness", label: "Liveness", icon: Activity, color: "#8B5CF6" },
@@ -93,17 +94,54 @@ export default function AIExplanationPanel({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [chatHistory])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!chatInput.trim() || !agents) return
-    const qa = agents.tutor.answer(chatInput)
-    setChatHistory(prev => [...prev, qa])
+    const input = chatInput
     setChatInput("")
+
+    const loadingQA: TutorQA = { 
+      question: input, 
+      answer: "Thinking...", 
+      agent: "tutor", 
+      relatedConcepts: [] 
+    }
+    setChatHistory(prev => [...prev, loadingQA])
+
+    try {
+      const qa = await agents.tutor.answer(input)
+      setChatHistory(prev => [...prev.slice(0, -1), qa])
+    } catch (error) {
+      setChatHistory(prev => [...prev.slice(0, -1), { 
+        question: input, 
+        answer: "Sorry, there was an error connecting to the AI.", 
+        agent: "tutor", 
+        relatedConcepts: [] 
+      }])
+    }
   }
 
-  const handleSuggestion = (q: string) => {
+  const handleSuggestion = async (q: string) => {
     if (!agents) return
-    const qa = agents.tutor.answer(q)
-    setChatHistory(prev => [...prev, qa])
+    
+    const loadingQA: TutorQA = { 
+      question: q, 
+      answer: "Thinking...", 
+      agent: "tutor", 
+      relatedConcepts: [] 
+    }
+    setChatHistory(prev => [...prev, loadingQA])
+
+    try {
+      const qa = await agents.tutor.answer(q)
+      setChatHistory(prev => [...prev.slice(0, -1), qa])
+    } catch (error) {
+      setChatHistory(prev => [...prev.slice(0, -1), { 
+        question: q, 
+        answer: "Sorry, there was an error connecting to the AI.", 
+        agent: "tutor", 
+        relatedConcepts: [] 
+      }])
+    }
   }
 
   const agentColor = AGENT_TABS.find(a => a.id === activeAgent)?.color ?? "#06B6D4"
@@ -111,7 +149,7 @@ export default function AIExplanationPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Agent tabs */}
-      <div className="flex gap-1 p-2 border-b border-white/5 overflow-x-auto scrollbar-none shrink-0">
+      <div className="flex gap-1 p-2 border-b border-white/5 overflow-x-auto shrink-0 pb-3 scroll-smooth">
         {AGENT_TABS.map(({ id, label, icon: Icon, color }) => (
           <button
             key={id}
@@ -130,7 +168,7 @@ export default function AIExplanationPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto scroll-smooth p-3 space-y-3 min-w-0">
         {!result && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-4">
             <div className="w-12 h-12 rounded-full bg-accent1/10 flex items-center justify-center">
@@ -250,7 +288,7 @@ export default function AIExplanationPanel({
 
         {/* Tutor chat */}
         {result && activeAgent === "tutor" && (
-          <div className="flex flex-col gap-3 h-full">
+          <div className="flex flex-col gap-4">
             {chatHistory.length === 0 && (
               <div>
                 <p className="text-[10px] text-muted mb-2">Suggested questions:</p>
@@ -269,30 +307,49 @@ export default function AIExplanationPanel({
               </div>
             )}
 
-            <div className="space-y-3 flex-1">
+            <div className="space-y-6 pb-4">
               {chatHistory.map((qa, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-2"
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4"
                 >
-                  <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-accent2/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-[8px] text-accent2">Q</span>
+                  {/* User Message */}
+                  <div className="flex items-start justify-end gap-2.5 ml-6">
+                    <div className="bg-accent2/15 border border-accent2/20 rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-[12px] text-white/95 shadow-sm backdrop-blur-sm">
+                      {qa.question}
                     </div>
-                    <p className="text-[11px] text-white/80">{qa.question}</p>
+                    <div className="w-6 h-6 rounded-full bg-accent2/20 border border-accent2/30 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(139,92,246,0.2)]">
+                      <span className="text-[10px] text-accent2 font-bold">U</span>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2 ml-2">
-                    <div className="w-5 h-5 rounded-full bg-accent1/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Brain className="w-2.5 h-2.5 text-accent1" />
+
+                  {/* AI Message */}
+                  <div className="flex items-start gap-2.5 mr-2">
+                    <div className="w-6 h-6 rounded-full bg-accent1/20 border border-accent1/30 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                      <Brain className="w-3.5 h-3.5 text-accent1" />
                     </div>
-                    <div className="bg-white/[0.03] rounded-xl px-3 py-2 text-[11px] text-white/70 leading-relaxed flex-1">
-                      {qa.answer}
+                    <div className="bg-surface2/60 border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3.5 text-[13px] text-white/90 shadow-sm backdrop-blur-md flex-1">
+                      {qa.answer === "Thinking..." ? (
+                        <div className="flex items-center gap-1.5 h-5 px-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent1/70 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent1/70 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent1/70 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      ) : (
+                        <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-background/80 prose-pre:border prose-pre:border-white/10 prose-pre:overflow-x-auto prose-pre:custom-scrollbar prose-pre:pb-1.5 prose-headings:text-accent1 prose-strong:text-white prose-a:text-accent3 break-words">
+                          <ReactMarkdown>{qa.answer}</ReactMarkdown>
+                        </div>
+                      )}
+                      
                       {qa.relatedConcepts.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
+                        <div className="flex flex-wrap gap-1.5 mt-4 pt-3 border-t border-white/10">
                           {qa.relatedConcepts.map(c => (
-                            <span key={c} className="text-[9px] px-1.5 py-0.5 rounded bg-accent1/10 text-accent1/70 font-mono">{c}</span>
+                            <span key={c} className="text-[10px] px-2 py-0.5 rounded-full bg-accent1/10 text-accent1/90 border border-accent1/20 font-mono transition-colors hover:bg-accent1/20 hover:text-accent1 cursor-default">
+                              {c}
+                            </span>
                           ))}
                         </div>
                       )}
@@ -300,7 +357,7 @@ export default function AIExplanationPanel({
                   </div>
                 </motion.div>
               ))}
-              <div ref={chatEndRef} />
+              <div ref={chatEndRef} className="h-2" />
             </div>
           </div>
         )}
